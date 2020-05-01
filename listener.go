@@ -16,7 +16,7 @@ type listener struct {
 var _ net.Listener = &listener{}
 
 // Listen creates a QUIC listener on the given network interface
-func Listen(network, laddr string, tlsConfig *tls.Config) (net.Listener, error) {
+func Listen(network, laddr string, tlsConfig *tls.Config, quicConfig *quic.Config) (net.Listener, error) {
 	udpAddr, err := net.ResolveUDPAddr(network, laddr)
 	if err != nil {
 		return nil, &net.OpError{Op: "listen", Net: network, Source: nil, Addr: nil, Err: err}
@@ -26,7 +26,7 @@ func Listen(network, laddr string, tlsConfig *tls.Config) (net.Listener, error) 
 		return nil, err
 	}
 
-	ln, err := quic.Listen(conn, tlsConfig, nil)
+	ln, err := quic.Listen(conn, tlsConfig, quicConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,16 @@ func (s *listener) Accept() (net.Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	qconn, err := newConn(sess, s.conn)
+	stream, err := sess.AcceptStream(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	qconn := &Conn{
+		conn:    s.conn,
+		session: sess,
+		stream:  stream,
+	}
 	if err != nil {
 		return nil, err
 	}

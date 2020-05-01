@@ -10,9 +10,11 @@ import (
 	"flag"
 	"fmt"
 	"math/big"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/lucas-clemente/quic-go"
 	"github.com/smallnest/quick"
 )
 
@@ -23,6 +25,9 @@ func main() {
 	startClient := flag.Bool("c", false, "client")
 	flag.Parse()
 
+	quicConfig := &quic.Config{
+		MaxIdleTimeout: time.Minute,
+	}
 	if *startServer {
 		// start the server
 		go func() {
@@ -31,7 +36,7 @@ func main() {
 				panic(err)
 			}
 
-			ln, err := quick.Listen("udp", ":8972", tlsConf)
+			ln, err := quick.Listen("udp", ":8972", tlsConf, quicConfig)
 			if err != nil {
 				panic(err)
 			}
@@ -63,20 +68,24 @@ func main() {
 				InsecureSkipVerify: true,
 				NextProtos:         []string{"quick"},
 			}
-			conn, err := quick.Dial("127.0.0.1:8972", tlsConf)
+			conn, err := quick.Dial("127.0.0.1:8972", tlsConf, quicConfig)
 			if err != nil {
 				panic(err)
 			}
 
-			message := "Ping from client"
-			fmt.Fprintf(conn, message+"\n")
-			fmt.Printf("Sending message: %s\n", message)
-			// listen for reply
-			answer, err := bufio.NewReader(conn).ReadString('\n')
-			if err != nil {
-				panic(err)
+			for i := 0; ; i++ {
+				message := "Ping from client #" + strconv.Itoa(i)
+				fmt.Fprintf(conn, message+"\n")
+				fmt.Printf("Sending message: %s\n", message)
+				// listen for reply
+				answer, err := bufio.NewReader(conn).ReadString('\n')
+				if err != nil {
+					panic(err)
+				}
+				fmt.Print("Message from server: " + answer)
+				time.Sleep(time.Second)
 			}
-			fmt.Print("Message from server: " + answer)
+
 		}()
 	}
 

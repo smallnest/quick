@@ -10,7 +10,7 @@ import (
 
 // Dial creates a new QUIC connection
 // it returns once the connection is established and secured with forward-secure keys
-func Dial(addr string, tlsConfig *tls.Config) (net.Conn, error) {
+func Dial(addr string, tlsConfig *tls.Config, quicConfig *quic.Config) (net.Conn, error) {
 	udpAddr, err := net.ResolveUDPAddr("udp", addr)
 	if err != nil {
 		return nil, err
@@ -21,7 +21,7 @@ func Dial(addr string, tlsConfig *tls.Config) (net.Conn, error) {
 	}
 
 	// DialAddr returns once a forward-secure connection is established
-	quicSession, err := quic.Dial(udpConn, udpAddr, addr, tlsConfig, nil)
+	quicSession, err := quic.Dial(udpConn, udpAddr, addr, tlsConfig, quicConfig)
 	if err != nil {
 		return nil, err
 	}

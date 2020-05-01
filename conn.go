@@ -1,8 +1,8 @@
 package quick
 
 import (
-	"context"
 	"net"
+	"syscall"
 	"time"
 
 	quic "github.com/lucas-clemente/quic-go"
@@ -16,18 +16,6 @@ type Conn struct {
 	session quic.Session
 
 	stream quic.Stream
-}
-
-func newConn(sess quic.Session, conn *net.UDPConn) (*Conn, error) {
-	stream, err := sess.OpenStreamSync(context.Background())
-	if err != nil {
-		return nil, err
-	}
-	return &Conn{
-		conn:    conn,
-		session: sess,
-		stream:  stream,
-	}, nil
 }
 
 // Read implements the Conn Read method.
@@ -53,10 +41,7 @@ func (c *Conn) RemoteAddr() net.Addr {
 // Close closes the connection.
 func (c *Conn) Close() error {
 	if c.stream != nil {
-		c.stream.Close()
-	}
-	if c.conn != nil {
-		return c.conn.Close()
+		return c.stream.Close()
 	}
 
 	return nil
@@ -85,4 +70,9 @@ func (c *Conn) SetReadBuffer(bytes int) error {
 // SetWriteBuffer sets the size of the operating system's transmit buffer associated with the connection.
 func (c *Conn) SetWriteBuffer(bytes int) error {
 	return c.conn.SetWriteBuffer(bytes)
+}
+
+// SyscallConn returns a raw network connection. This implements the syscall.Conn interface.
+func (c *Conn) SyscallConn() (syscall.RawConn, error) {
+	return c.conn.SyscallConn()
 }
