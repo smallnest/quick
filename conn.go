@@ -15,44 +15,29 @@ type Conn struct {
 	conn    *net.UDPConn
 	session quic.Session
 
-	receiveStream quic.Stream
-	sendStream    quic.Stream
+	stream quic.Stream
 }
 
 func newConn(sess quic.Session, conn *net.UDPConn) (*Conn, error) {
-	stream, err := sess.OpenStream()
+	stream, err := sess.OpenStreamSync(context.Background())
 	if err != nil {
 		return nil, err
 	}
 	return &Conn{
-		conn:       conn,
-		session:    sess,
-		sendStream: stream,
+		conn:    conn,
+		session: sess,
+		stream:  stream,
 	}, nil
 }
 
 // Read implements the Conn Read method.
 func (c *Conn) Read(b []byte) (int, error) {
-	if c.receiveStream == nil {
-		var err error
-		c.receiveStream, err = c.session.AcceptStream(context.Background())
-		// TODO: check stream id
-		if err != nil {
-			return 0, err
-		}
-		// quic.Stream.Close() closes the stream for writing
-		err = c.receiveStream.Close()
-		if err != nil {
-			return 0, err
-		}
-	}
-
-	return c.receiveStream.Read(b)
+	return c.stream.Read(b)
 }
 
 // Write implements the Conn Write method.
 func (c *Conn) Write(b []byte) (int, error) {
-	return c.sendStream.Write(b)
+	return c.stream.Write(b)
 }
 
 // LocalAddr returns the local network address.
@@ -67,13 +52,14 @@ func (c *Conn) RemoteAddr() net.Addr {
 
 // Close closes the connection.
 func (c *Conn) Close() error {
-	if c.sendStream != nil {
-		c.sendStream.Close()
+	if c.stream != nil {
+		c.stream.Close()
 	}
-	if c.receiveStream.Close() != nil {
-		c.receiveStream.Close()
+	if c.conn != nil {
+		return c.conn.Close()
 	}
-	return c.conn.Close()
+
+	return nil
 }
 
 // SetDeadline sets the deadline associated with the listener. A zero time value disables the deadline.

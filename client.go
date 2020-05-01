@@ -1,6 +1,7 @@
 package quick
 
 import (
+	"context"
 	"crypto/tls"
 	"net"
 
@@ -25,14 +26,14 @@ func Dial(addr string, tlsConfig *tls.Config) (net.Conn, error) {
 		return nil, err
 	}
 
-	sendStream, err := quicSession.OpenStream()
+	stream, err := quicSession.OpenStreamSync(context.Background())
 	if err != nil {
 		return nil, err
 	}
 
 	return &Conn{
-		conn:       udpConn,
-		session:    quicSession,
-		sendStream: sendStream,
+		conn:    udpConn,
+		session: quicSession,
+		stream:  stream,
 	}, nil
 }

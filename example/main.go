@@ -59,7 +59,10 @@ func main() {
 	if *startClient {
 		// run the client
 		go func() {
-			tlsConf := &tls.Config{InsecureSkipVerify: true}
+			tlsConf := &tls.Config{
+				InsecureSkipVerify: true,
+				NextProtos:         []string{"quick"},
+			}
 			conn, err := quick.Dial("127.0.0.1:8972", tlsConf)
 			if err != nil {
 				panic(err)
@@ -109,5 +112,6 @@ func generateTLSConfig() (*tls.Config, error) {
 
 	return &tls.Config{
 		Certificates: []tls.Certificate{tlsCert},
+		NextProtos:   []string{"quick"},
 	}, nil
 }
