@@ -10,7 +10,7 @@ import (
 
 type listener struct {
 	conn       *net.UDPConn
-	quicServer quic.Listener
+	quicServer *quic.Listener
 }
 
 var _ net.Listener = &listener{}
