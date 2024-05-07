@@ -38,11 +38,16 @@ func Listen(network, laddr string, tlsConfig *tls.Config, quicConfig *quic.Confi
 
 // Accept waits for and returns the next connection to the listener.
 func (s *listener) Accept() (net.Conn, error) {
-	conn, err := s.quicServer.Accept(context.Background())
+	return s.AcceptContext(context.Background())
+}
+
+// AcceptContext waits for and returns the next connection to the listener.
+func (s *listener) AcceptContext(ctx context.Context) (net.Conn, error) {
+	conn, err := s.quicServer.Accept(ctx)
 	if err != nil {
 		return nil, err
 	}
-	stream, err := conn.AcceptStream(context.Background())
+	stream, err := conn.AcceptStream(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -52,9 +57,7 @@ func (s *listener) Accept() (net.Conn, error) {
 		qconn:  conn,
 		stream: stream,
 	}
-	if err != nil {
-		return nil, err
-	}
+
 	return qconn, nil
 }
 
